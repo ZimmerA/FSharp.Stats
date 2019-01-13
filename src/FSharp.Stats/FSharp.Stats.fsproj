@@ -1,15 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <ProjectGuid>4e235ddd-1b59-4a93-abe9-2feef18b09a1</ProjectGuid>
+    <TargetFrameworks>net45;net47;netstandard2.0</TargetFrameworks>
     <RootNamespace>FSharp.Stats</RootNamespace>
     <AssemblyName>FSharp.Stats</AssemblyName>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <DocumentationFile>bin\$(Configuration)\$(AssemblyName).XML</DocumentationFile>
+    <Name>FSharp.Stats</Name>
+    <OutputType>Library</OutputType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Optional: Declare that the Repository URL can be published to NuSpec -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- Optional: Embed source files that are not tracked by the source control manager to the PDB -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Optional: Include PDB in the built .nupkg -->
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
-
   <ItemGroup>
+    <EmbeddedResource Remove="Scripts\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Ops.fs" />
     <Compile Include="Random.fs" />
     <Compile Include="ServiceLocator.fs" />
@@ -33,6 +42,7 @@
     <Compile Include="Correlation.fs" />
     <Compile Include="Quantile.fs" />
     <Compile Include="Precision.fs" />
+    <Compile Include="Geometry.fs" />
     <!-- SpecialFunctions -->
     <Compile Include="SpecialFunctions\Gamma.fs" />
     <Compile Include="SpecialFunctions\Factorial.fs" />
@@ -40,6 +50,8 @@
     <Compile Include="SpecialFunctions\Erf.fs" />
     <Compile Include="SpecialFunctions\Logistic.fs" />
     <Compile Include="SpecialFunctions\Binomial.fs" />
+    <Compile Include="Algebra\EVD.fs" />
+    <Compile Include="Algebra\SVD.fs" />
     <!-- Algebra -->
     <Compile Include="Algebra\NativeArray.fs" />
     <Compile Include="Algebra\NativeArrayExtensions.fs" />
@@ -53,6 +65,7 @@
     <!-- Integration -->
     <Compile Include="Integration\Differentiation.fs" />
     <Compile Include="Integration\Integration.fs" />
+    <Compile Include="Optimization\BrentExt.fs" />
     <!-- Optimization -->
     <Compile Include="Optimization\GradientDescent.fs" />
     <Compile Include="Optimization\Bisection.fs" />
@@ -66,6 +79,9 @@
     <Compile Include="Signal\ContinuousWavelet.fs" />
     <Compile Include="Signal\Baseline.fs" />
     <Compile Include="Signal\Filtering.fs" />
+    <Compile Include="Signal\Convolution.fs" />
+    <Compile Include="Signal\PeakDetection.fs" />
+    <Compile Include="Signal\Padding.fs" />
     <!-- Distributions -->
     <Compile Include="Distributions\Bandwidth.fs" />
     <Compile Include="Distributions\Frequency.fs" />
@@ -85,20 +101,25 @@
     <Compile Include="Testing\Outliers.fs" />
     <Compile Include="Testing\SAM.fs" />
     <Compile Include="Testing\FisherHotelling.fs" />
+    <Compile Include="Testing\RMT.fs" />
+    <Compile Include="Fitting\NonLinearRegression.fs" />
     <!-- Fitting -->
-    <Compile Include="Fitting\Regression.fs" />
+    <Compile Include="Fitting\LinearRegression.fs" />
+    <Compile Include="Fitting\GoodnessOfFit.fs" />
+    <Compile Include="Fitting\LogisticRegression.fs" />
     <Compile Include="Fitting\QuantileNormalization.fs" />
-    <Compile Include="ML\SurprisalAnalysis.fs" />
+    <Compile Include="Fitting\Spline.fs" />
     <!-- ML -->
+    <Compile Include="ML\SurprisalAnalysis.fs" />
     <Compile Include="ML\DistanceMetrics.fs" />
     <Compile Include="ML\Impute.fs" />
+    <Compile Include="ML\Unsupervised\PrincipalComponentAnalysis.fs" />
     <!-- ML / Unsupervised -->
     <Compile Include="ML\Unsupervised\IterativeClustering.fs" />
     <Compile Include="ML\Unsupervised\HierarchicalClustering.fs" />
     <Compile Include="ML\Unsupervised\DbScan.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="App.config" />
+    <None Include="paket.references" />
+    <None Include="paket.template" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

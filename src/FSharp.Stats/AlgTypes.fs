@@ -425,13 +425,61 @@ namespace FSharp.Stats
               let values = Array2D.zeroCreate m n
               List.iteri (fun i rw -> List.iteri (fun j x -> values.[i,j] <- x) rw) xss;
               DenseMatrix(ops,values)
-        
-        let listRowVecGU ops xs = mkRowVecGU ops (Array.ofList xs) 
-        let listVecGU ops xs = mkVecGU ops (Array.ofList xs) 
 
-        let seqDenseMatrixGU ops xss = listDenseMatrixGU ops (xss |> Seq.toList |> List.map Seq.toList)
-        let seqVecGU  ops xss = listVecGU ops (xss |> Seq.toList)
-        let seqRowVecGU ops xss = listRowVecGU ops (xss |> Seq.toList)
+        let colListDenseMatrixGU ops xss =
+            let m = List.length xss
+            match xss with 
+            | [] -> invalidArg "xss" "unexpected empty list"
+            | h :: t -> 
+                let n = List.length h
+                if not (List.forall (fun xs -> List.length xs=n) t) then invalidArg "xss" "the lists are not all of the same length";
+                let values = Array2D.zeroCreate n m
+                List.iteri (fun i rw -> List.iteri (fun j x -> values.[j,i] <- x) rw) xss;
+                DenseMatrix(ops,values)
+
+        let listVecGU ops xs = mkVecGU ops (Array.ofList xs)         
+        let listRowVecGU ops xs = mkRowVecGU ops (Array.ofList xs) 
+
+        let seqDenseMatrixGU ops xss = // TM
+            //listDenseMatrixGU ops (xss |> Seq.toList |> List.map Seq.toList)
+            let m = Seq.length xss
+            if m < 1 then invalidArg "xss" "unexpected empty seq"
+            let n = xss |> Seq.head |> Seq.length
+            if not (Seq.forall (fun xs -> Seq.length xs=n) xss) then invalidArg "xss" "the sequences are not all of the same length";
+            let values = Array2D.zeroCreate m n
+            Seq.iteri (fun i rw -> Seq.iteri (fun j x -> values.[i,j] <- x) rw) xss;
+            DenseMatrix(ops,values)
+
+        let colSeqDenseMatrixGU ops xss = // TM
+            //listDenseMatrixGU ops (xss |> Seq.toList |> List.map Seq.toList)
+            let m = Seq.length xss
+            if m < 1 then invalidArg "xss" "unexpected empty seq"
+            let n = xss |> Seq.head |> Seq.length
+            if not (Seq.forall (fun xs -> Seq.length xs=n) xss) then invalidArg "xss" "the sequences are not all of the same length";
+            let values = Array2D.zeroCreate m n
+            Seq.iteri (fun i rw -> Seq.iteri (fun j x -> values.[j,i] <- x) rw) xss;
+            DenseMatrix(ops,values)
+
+        let seqVecGU  ops xss = mkVecGU ops (Array.ofSeq xss) 
+        let seqRowVecGU ops xss = mkRowVecGU ops (Array.ofSeq xss)
+
+        let arrayDenseMatrixGU ops xss = // TM
+            let m = Array.length xss
+            if m < 1 then invalidArg "xss" "unexpected empty array"
+            let n = xss.[0] |> Array.length
+            if not (Array.forall (fun xs -> Array.length xs=n) xss) then invalidArg "xss" "the arrays are not all of the same length";
+            let values = Array2D.zeroCreate m n
+            Array.iteri (fun i rw -> Array.iteri (fun j x -> values.[i,j] <- x) rw) xss;
+            DenseMatrix(ops,values)
+
+        let colArrayDenseMatrixGU ops xss = // TM
+            let m = Array.length xss
+            if m < 1 then invalidArg "xss" "unexpected empty array"
+            let n = xss.[0] |> Array.length
+            if not (Array.forall (fun xs -> Array.length xs=n) xss) then invalidArg "xss" "the arrays are not all of the same length";
+            let values = Array2D.zeroCreate m n
+            Array.iteri (fun i rw -> Array.iteri (fun j x -> values.[j,i] <- x) rw) xss;
+            DenseMatrix(ops,values)
 
         let inline binaryOpDenseMatrixGU f (a:DenseMatrix<_>) (b:DenseMatrix<_>) = (* pointwise binary operator *)
             let nA = a.NumCols
@@ -797,6 +845,17 @@ namespace FSharp.Stats
             let mA= if a.NumRows = b.NumRows then a.NumRows else raise (ArgumentException("Vectors of different length."))                        
             createVecGU a.OpsData mA (fun i -> f a.[i] b.[i])
 
+        let map3VecGU f (a:Vector<'a>) (b:Vector<'a>) (c:Vector<'a>) : Vector<'a> = 
+            let mA= if a.NumRows = b.NumRows && a.NumRows = c.NumRows then a.NumRows else raise (ArgumentException("Vectors of different length."))                        
+            createVecGU a.OpsData mA (fun i -> f a.[i] b.[i] c.[i])
+            
+        let zipVecGU (a:Vector<'a>) (b:Vector<'b>) : Vector<'a*'b> = 
+            let mA= if a.NumRows = b.NumRows then a.NumRows else raise (ArgumentException("Vectors of different length."))     
+            createVecGU None mA (fun i -> a.[i],b.[i])
+        
+        let unzipVecGU (a : Vector<'a*'b>) : Vector<'a> * Vector<'b> = 
+            let mA = a.NumRows
+            createVecGU None mA (fun i -> fst a.[i]),createVecGU None mA (fun i -> snd a.[i])
 
         let copyDenseMatrixGU (a : DenseMatrix<'T>) : DenseMatrix<'T> = 
             let arrA = a.Values 
@@ -826,6 +885,16 @@ namespace FSharp.Stats
 
         let permuteRowVecGU (p:permutation) (a:RowVector<_>) = 
             createRowVecGU a.OpsData a.NumCols (fun i -> a.[p i])
+
+        let inline inplace_mapDenseMatrixGU f (a:DenseMatrix<_>) = 
+            let arrA = a.Values 
+            assignDenseMatrixGU (fun i j -> f (getArray2D arrA i j)) a
+
+        let inline inplace_mapRowVecGU f (a:RowVector<_>) = 
+            assignRowVecGU (fun i -> f a.[i]) a
+
+        let inline inplace_mapVecGU f (a:Vector<_>) = 
+            assignVecGU (fun i -> f a.[i]) a
 
         let inline inplace_mapiDenseMatrixGU f (a:DenseMatrix<_>) = 
             let arrA = a.Values 
@@ -1067,9 +1136,13 @@ namespace FSharp.Stats
         let inline mkRowVecDS arr          = GU.mkRowVecGU          FloatOps arr
         let inline mkVecDS  arr            = GU.mkVecGU             FloatOps arr
         let inline listDenseMatrixDS  ll   = GU.listDenseMatrixGU   FloatOps ll
+        let inline colListDenseMatrixDS ll = GU.colListDenseMatrixGU FloatOps ll
         let inline listRowVecDS l          = GU.listRowVecGU        FloatOps l
         let inline listVecDS  l            = GU.listVecGU           FloatOps l
         let inline seqDenseMatrixDS  ll    = GU.seqDenseMatrixGU    FloatOps ll
+        let inline colSeqDenseMatrixDS  ll = GU.colSeqDenseMatrixGU FloatOps ll
+        let inline arrayDenseMatrixDS  ll    = GU.arrayDenseMatrixGU    FloatOps ll
+        let inline colArrayDenseMatrixDS  ll = GU.colArrayDenseMatrixGU FloatOps ll
         let inline seqRowVecDS l           = GU.seqRowVecGU         FloatOps l
         let inline seqVecDS  l             = GU.seqVecGU            FloatOps l
 
@@ -1718,6 +1791,12 @@ namespace FSharp.Stats
 
         let map2V  f a b = GU.map2VecGU f a b
 
+        let map3V f a b c = GU.map3VecGU f a b c
+
+        let zipV a b = GU.zipVecGU a b
+
+        let unzipV a = GU.unzipVecGU a
+
         let copyM  a = 
             match a with 
             | SparseRepr a -> SparseRepr (GU.copySparseGU a)
@@ -1762,11 +1841,18 @@ namespace FSharp.Stats
 
         let getDiagM  a = getDiagnM a 0
 
+        let inline inplace_mapM  f a = 
+            match a with 
+            | SparseRepr _ -> sparseNotMutable()
+            | DenseRepr a -> GU.inplace_mapDenseMatrixGU f a
+
         let inline inplace_mapiM  f a = 
             match a with 
             | SparseRepr _ -> sparseNotMutable()
             | DenseRepr a -> GU.inplace_mapiDenseMatrixGU f a
 
+        let inline inplace_mapV  f a = GU.inplace_mapVecGU f a
+ 
         let inline inplace_mapiV  f a = GU.inplace_mapiVecGU f a
         
         let inline foldM  f z a = 
@@ -1895,7 +1981,7 @@ namespace FSharp.Stats
         let countR ((a,b) : range)   = (b-a)+1
         let idxR    ((a,_) : range) i = a+i
         let inR    ((a,b) : range) i = a <= i && i <= b
-        ///Returns row of index i of matrix a
+        ///Returns row of index i of matrix a as a vector
         let getRowM  (a:Matrix<_>) i = createRVx (opsM a) a.NumCols (fun j -> a.[i,j])
         ///Replaces row of index j of matrix a with values of vector v, if vector length matches rowsize
         let setRowM (a:Matrix<_>) i (v:Vector<_>) = 
@@ -1907,7 +1993,7 @@ namespace FSharp.Stats
                 failwith ("Can't set row, vector is longer than matrix column number")
             else 
                 failwith ("Can't set row, vector is shorter than matrix column number")
-        ///Returns row of index i of matrix a
+        ///Returns col of index i of matrix a as a vector
         let getColM  (a:Matrix<_>) j = createVx (opsM a) a.NumRows (fun i -> a.[i,j])
         ///Replaces column of index i of matrix a with values of vector v, if vector length matches columnsize
         let setColM (a:Matrix<_>) j (v:Vector<_>) = 
@@ -1981,7 +2067,7 @@ namespace FSharp.Stats
                 for j = start2 to finish2 do
                     m.[i,j] <- vs.[i-start1,j-start2]
 
-
+        /// RowCount * ColumnCount
         member m.Dimensions = m.NumRows,m.NumCols
 
         member m.Transpose = SpecializedGenericImpl.transM m

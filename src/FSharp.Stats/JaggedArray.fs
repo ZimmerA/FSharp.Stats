@@ -3,6 +3,15 @@
 [<AutoOpen>]
 module JaggedArray =
 
+    /// Creates an jagged array with the given dimensions and a generator function to compute the elements
+    let init rowN colN f =
+        Array.init rowN (fun rowi ->
+            Array.init colN (fun coli -> f rowi coli)) 
+
+    /// Creates an jagged array where the entries are initially the default value Unchecked.defaultof
+    let zeroCreate rowN colN = 
+        Array.init rowN (fun _ -> Array.zeroCreate colN)
+
     /// Copies the jagged array
     let copy (arr : _[][]) = 
         Array.init arr.Length (fun i ->
@@ -16,6 +25,21 @@ module JaggedArray =
             Array.init (colSize) (fun rowI ->  Array.init (arr.Length) (fun colI -> (arr.[colI].[rowI])))
         else
             arr
+    
+    /// Converts from an Array2D into an jagged array
+    let toArray2D (arr: 'T [][]) =
+        let n = arr.Length
+        if n > 0 then 
+            let m = arr.[0].Length
+            Array2D.init n m (fun i j -> arr.[i].[j])
+        else
+            Array2D.zeroCreate 0 0    
+
+    /// Converts a jagged array into an Array2D
+    let ofArray2D (arr:'T[,]) =
+        let n,m = Array2D.length1 arr,Array2D.length2 arr
+        Array.init n (fun i ->
+                Array.init m (fun j -> arr.[i,j])) 
 
     /// Converts a jagged list into a jagged array
     let ofJaggedList (data: 'T list list) =
@@ -87,14 +111,13 @@ module JaggedArray =
     /// Shuffles each column of a jagged array separately  (method: Fisher-Yates)
     let shuffleColumnWiseInPlace (arr: 'T [][]) =
         if arr.Length > 0 then 
-            let random      = new System.Random()
             let rowCount    = arr.Length
             let columnCount = arr.[0].Length
             
             for ci = columnCount - 1 downto 0 do 
                 for ri = rowCount downto  1 do
                     // Pick random element to swap.
-                    let rj = random.Next(ri) // 0 <= j <= i-1
+                    let rj = Random.rndgen.NextInt(ri) // 0 <= j <= i-1
                     // Swap.
                     let tmp         =  arr.[rj].[ci]
                     arr.[rj].[ci]     <- arr.[ri - 1].[ci]
@@ -108,14 +131,13 @@ module JaggedArray =
     /// Shuffles each row of a jagged array separately  (method: Fisher-Yates)
     let shuffleRowWiseInPlace (arr: 'T [][]) =
         if arr.Length > 0 then 
-            let random      = new System.Random()
             let rowCount    = arr.Length
             let columnCount = arr.[0].Length
             
             for ri = rowCount - 1 downto  0 do
                 for ci = columnCount downto 1 do 
                     // Pick random element to swap.
-                    let cj = random.Next(ci) // 0 <= j <= i-1
+                    let cj = Random.rndgen.NextInt(ci) // 0 <= j <= i-1
                     // Swap.
                     let tmp           =  arr.[ri].[cj]
                     arr.[ri].[cj]     <- arr.[ri].[ci - 1]
@@ -129,14 +151,13 @@ module JaggedArray =
     /// Shuffels a jagged array (method: Fisher-Yates)
     let shuffleInPlace (arr: 'T [][]) =
         if arr.Length > 0 then 
-            let random      = new System.Random()
             let rowCount    = arr.Length
             let columnCount = arr.[0].Length
             for ri = rowCount downto 1 do
                 for ci = columnCount downto 1 do 
                     // Pick random element to swap.
-                    let rj = random.Next(ri) // 0 <= j <= i-1
-                    let cj = random.Next(ci)
+                    let rj = Random.rndgen.NextInt(ri) // 0 <= j <= i-1
+                    let cj = Random.rndgen.NextInt(ci)
                     // Swap.
                     let tmp               =  arr.[rj].[cj]
                     arr.[rj].[cj]         <- arr.[ri - 1].[ci - 1]
